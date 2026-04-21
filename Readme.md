@@ -1,6 +1,6 @@
 # Dummy Triage
 
-A simple lightweight Python-based malware triage tool for quickly extracting basic indicators and metadata from binary files.
+A simple lightweight Python-based malware triage tool for quickly extracting basic indicators and metadata from binary files. Now able to handle batch file processing!
 
 ---
 
@@ -123,7 +123,6 @@ Planned improvements include:
 * Improved string filtering and parsing
 * Suspicious import detection
 * YARA rule integration
-* Batch file processing
 
 ---
 
