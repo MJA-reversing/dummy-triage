@@ -102,6 +102,25 @@ def analyze_pe(file_path):
         "imports": list(set(imports))
     }
 
+def summarize_reports(reports):
+    total_ips = 0
+    total_urls = 0
+    total_emails = 0
+    total_suspicious = 0
+
+    for r in reports:
+        total_ips += len(r["strings"]["ips"])
+        total_urls += len(r["strings"]["urls"])
+        total_emails += len(r["strings"]["emails"])
+        total_suspicious += len(r["strings"]["suspicious"])
+
+    return {
+        "total_ips": total_ips,
+        "total_urls": total_urls,
+        "total_emails": total_emails,
+        "total_suspicious_strings": total_suspicious
+    }
+
 def build_report(file_path):
     report = {}
 
@@ -115,6 +134,7 @@ def build_report(file_path):
 def save_batch_report(reports, directory):
     output = {
         "total_files": len(reports),
+        "summary": summarize_reports(reports),
         "reports": reports
     }
 
