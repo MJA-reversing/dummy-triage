@@ -7,16 +7,16 @@ import json
 
 def getfile():
     if len(sys.argv) != 2:
-        print("usage: python dummy-triage.py <binary>")
+        print("usage: python dummy-triage.py <file_or_directory>")
         sys.exit(1)
 
-    file_path = sys.argv[1]
+    input_path = sys.argv[1]
 
-    if not os.path.isfile(file_path):
-        print(f"Error: File '{file_path}' does not exist.")
+    if not os.path.exists(input_path):
+        print(f"Error: '{input_path}' does not exist.")
         sys.exit(1)
 
-    return file_path
+    return input_path
 
 def gethash(file_path):
     md5_hash = hashlib.md5()
@@ -61,6 +61,27 @@ def extract_strings(file_path):
             result["suspicious"].append(decoded)
     return result
 
+def process_directory(directory):
+    print(f"[+] Processing directory: {directory}")
+
+    all_reports = []
+
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+
+        if not os.path.isfile(file_path):
+            continue
+
+        try:
+            print(f"[+] Processing: {filename}")
+            report = build_report(file_path)
+            all_reports.append(report)
+
+        except Exception as e:
+            print(f"[!] Error processing {filename}: {e}")
+
+    return all_reports
+
 def analyze_pe(file_path):
     try:
         pe = pefile.PE(file_path)
@@ -91,6 +112,19 @@ def build_report(file_path):
 
     return report
 
+def save_batch_report(reports, directory):
+    output = {
+        "total_files": len(reports),
+        "reports": reports
+    }
+
+    name = os.path.basename(directory.rstrip("/")) + "_batch_report.json"
+
+    with open(name, "w") as f:
+        json.dump(output, f, indent=4)
+
+    print(f"[+] Batch report saved to {name}")
+
 def save_report(report, file_path):
     base = os.path.basename(file_path)
     name = base + "_report.json"
@@ -101,9 +135,18 @@ def save_report(report, file_path):
     print(f"Report save to {name}")
 
 def main():
-    file_path = getfile()
-    report = build_report(file_path)
-    save_report(report, file_path)
+    input_path = getfile()
+
+    if os.path.isfile(input_path):
+        report = build_report(input_path)
+        save_report(report, input_path)
+
+    elif os.path.isdir(input_path):
+        reports = process_directory(input_path)
+        save_batch_report(reports, input_path)
+
+    else:
+        print("Invalid input")
 
 if __name__ == "__main__":
     main()
