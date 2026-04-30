@@ -30,7 +30,7 @@ def gethash(file_path):
             md5_hash.update(data)
             sha256_hash.update(data)
 
-    return md5_hash.hexdigest(), sha256_hash.hexdigest()
+    return "md5:"md5_hash.hexdigest(), "sha256:"sha256_hash.hexdigest()
 
 def extract_strings(file_path):
     result = {
@@ -59,6 +59,10 @@ def extract_strings(file_path):
             result["emails"].append(decoded)
         elif any(x in decoded.lower() for x in ["cmd", "powershell", "wget"]):
             result["suspicious"].append(decoded)
+        
+    for key in result:
+        result[key] = list(set(result[key]))
+
     return result
 
 def process_directory(directory):
@@ -102,19 +106,63 @@ def analyze_pe(file_path):
         "imports": list(set(imports))
     }
 
+def get_suspicious_findings(strings):
+    findings = {}
+
+    findings["has_network_indicators"] = bool(strings["ips"] or strings["urls"])
+    findings["has_suspicious_strings"] = bool(strings["suspicious"])
+
+    return findings
+
+def calculate_risk_score(strings):
+    score = 0
+
+    if strings["ips"] or strings["urls"]:
+        score += 2
+
+    if strings["suspicious"]:
+        score += 1
+
+    return score
+
+def summarize_reports(reports):
+    total_ips = 0
+    total_urls = 0
+    total_emails = 0
+    total_suspicious = 0
+
+    for r in reports:
+        total_ips += len(r["strings"]["ips"])
+        total_urls += len(r["strings"]["urls"])
+        total_emails += len(r["strings"]["emails"])
+        total_suspicious += len(r["strings"]["suspicious"])
+
+    return {
+        "total_ips": total_ips,
+        "total_urls": total_urls,
+        "total_emails": total_emails,
+        "total_suspicious_strings": total_suspicious
+    }
+
 def build_report(file_path):
     report = {}
 
-    report["file"] = file_path
+    strings = extract_strings(file_path)
+
+    report["file"] = os.path.basename(file_path)
     report["hashes"] = gethash(file_path)
-    report["strings"] = extract_strings(file_path)
+    report["strings"] = strings
     report["pe_analysis"] = analyze_pe(file_path)
+
+    report["suspicious_findings"] = get_suspicious_findings(strings)
+    report["risk_score"] = calculate_risk_score(strings)
 
     return report
 
 def save_batch_report(reports, directory):
     output = {
         "total_files": len(reports),
+        "summary": summarize_reports(reports),
         "reports": reports
     }
 
@@ -132,7 +180,7 @@ def save_report(report, file_path):
     with open(name,"w") as f:
         json.dump(report, f, indent=4)
 
-    print(f"Report save to {name}")
+    print(f"Report saved to {name}")
 
 def main():
     input_path = getfile()
