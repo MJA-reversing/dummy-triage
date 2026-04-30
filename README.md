@@ -120,7 +120,6 @@ pip install pefile
 Planned improvements include:
 
 * ELF and Mach-O support
-* Improved string filtering and parsing
 * Suspicious import detection
 * YARA rule integration
 
